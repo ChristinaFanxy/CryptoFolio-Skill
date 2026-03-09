@@ -3,9 +3,8 @@ name: cryptofolio
 description: 加密资产管理助手 - 通过对话记录持仓、交易、理财，支持导出 CSV/Excel
 version: 1.0.0
 author: christinaxu
-homepage: https://github.com/christinaxu/cryptofolio-skill
+homepage: https://github.com/ChristinaFanxy/CryptoFolio-Skill
 user-invocable: true
-metadata: {"emoji":"💰","openclaw":{"homepage":"https://github.com/christinaxu/cryptofolio-skill","primaryEnv":"CRYPTOFOLIO_API_URL"}}
 ---
 
 # CryptoFolio - 加密资产管理助手
@@ -23,9 +22,7 @@ metadata: {"emoji":"💰","openclaw":{"homepage":"https://github.com/christinaxu
 
 ## 数据存储
 
-数据通过 Cloudflare Workers API 存储在云端。用户需要配置：
-- `CRYPTOFOLIO_API_URL`: Cloudflare Worker 的 URL
-- `CRYPTOFOLIO_TOKEN`: 访问令牌
+数据保存在本地文件 `~/.openclaw/data/cryptofolio.json`，无需任何配置。
 
 ## 使用示例
 
