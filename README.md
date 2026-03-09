@@ -18,15 +18,28 @@
 
 如果你只想用网页版管理资产，不需要安装任何东西：
 
-### 1. 部署云端存储
+### 第一步：部署 Cloudflare Worker
 
-1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)
-2. **Workers & Pages** → **Create** → **Create Worker**
-3. 起个名字，点 **Deploy**
-4. 点 **Edit code**，粘贴以下代码：
+#### 1.1 注册/登录
+
+打开 https://dash.cloudflare.com ，用邮箱注册或登录
+
+#### 1.2 创建 Worker
+
+1. 左侧菜单点击 **Workers & Pages**
+2. 点击蓝色按钮 **Create**
+3. 选择 **Create Worker**
+4. 在 Name 输入一个名字，比如 `cryptofolio-api`
+5. 点击 **Deploy**（先部署一个空的）
+
+#### 1.3 编辑代码
+
+1. 部署成功后，点击 **Edit code** 按钮
+2. 把左边编辑器里的代码**全部删掉**
+3. 复制下面这段代码粘贴进去：
 
 ```js
-const TOKEN = 'your-secret-token'; // 改成你的密码
+const TOKEN = 'abc123'; // ⚠️ 改成你自己的密码
 
 export default {
   async fetch(request, env) {
@@ -53,18 +66,43 @@ export default {
 };
 ```
 
-5. 点 **Deploy**
-6. **Settings** → **Variables and Secrets** → **KV Namespace Bindings** → **Add binding**
-   - Variable name: `KV`
-   - 创建新的 namespace，命名为 `cryptofolio-data`
-7. 记下你的 Worker URL
+4. **重要**：把第一行的 `abc123` 改成你自己的密码（随便写，记住就行）
+5. 点击右上角 **Deploy** 保存
 
-### 2. 打开网页使用
+#### 1.4 创建 KV 存储
+
+1. 点击左上角返回，或左侧菜单点 **Workers & Pages**
+2. 左侧菜单点击 **KV**
+3. 点击 **Create a namespace**
+4. 名字输入 `cryptofolio-data`
+5. 点击 **Add**
+
+#### 1.5 绑定 KV 到 Worker
+
+1. 左侧菜单点 **Workers & Pages**
+2. 点击你创建的 Worker（`cryptofolio-api`）
+3. 点击 **Settings** 标签
+4. 往下滚动找到 **Bindings** 区域
+5. 点击 **Add**
+6. 选择 **KV Namespace**
+7. **Variable name** 填：`KV`（必须大写）
+8. **KV Namespace** 选择 `cryptofolio-data`
+9. 点击 **Deploy** 保存
+
+#### 1.6 记下你的 URL
+
+回到 Worker 概览页面，复制你的 URL，类似：
+```
+https://cryptofolio-api.你的用户名.workers.dev
+```
+
+### 第二步：打开网页使用
 
 1. 访问 https://christinafanxy.github.io/CryptoFolio-Skill/
-2. 点击右上角「☁️ 云端同步」
-3. 填入 Worker URL 和 Token
-4. 开始使用，数据保存在你自己的云端
+2. 点击右上角「☁️ 云端同步」按钮
+3. 填入你的 Worker URL 和密码（Token）
+4. 点击「测试连接」确认成功
+5. 点击「保存」，开始使用
 
 ---
 
@@ -77,36 +115,24 @@ mkdir -p ~/.openclaw/workspace/skills
 git clone https://github.com/ChristinaFanxy/CryptoFolio-Skill.git ~/.openclaw/workspace/skills/cryptofolio
 ```
 
-### 第二步：部署云端存储（Cloudflare Worker）
+### 第二步：部署 Cloudflare Worker
 
-1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)
-2. 左侧菜单 → **Workers & Pages** → **Create** → **Create Worker**
-3. 给 Worker 起个名字（如 `cryptofolio-api`），点 **Deploy**
-4. 点 **Edit code**，粘贴 `cloudflare-worker/worker.js` 的内容
-5. **修改第 4 行的 TOKEN** 为你自己的密码：
-   ```js
-   const TOKEN = 'your-secret-token'; // 改成你的密码
-   ```
-6. 点 **Deploy** 保存
-7. 回到 Worker 页面 → **Settings** → **Variables and Secrets** → **KV Namespace Bindings** → **Add binding**
-   - Variable name: `KV`
-   - KV namespace: 点击创建新的，命名为 `cryptofolio-data`
-8. 保存后记下你的 Worker URL（类似 `https://cryptofolio-api.xxx.workers.dev`）
+按照上面「纯网页用户」的 **第一步** 完成 Worker 部署，获得 URL 和密码。
 
-### 第三步：配置 OpenClaw
+### 第三步：配置云端连接
 
-在 OpenClaw 中对话：
-
-```
-设置 cryptofolio 云端同步
-```
-
-或者直接运行命令：
+运行命令（替换成你的 URL 和密码）：
 
 ```bash
 node ~/.openclaw/workspace/skills/cryptofolio/scripts/cryptofolio.mjs setup \
-  --url "https://你的worker.workers.dev" \
-  --token "你设置的密码"
+  --url "https://cryptofolio-api.xxx.workers.dev" \
+  --token "你的密码"
+```
+
+验证配置：
+
+```bash
+node ~/.openclaw/workspace/skills/cryptofolio/scripts/cryptofolio.mjs cloud-status
 ```
 
 ### 第四步：开始使用
@@ -119,16 +145,15 @@ node ~/.openclaw/workspace/skills/cryptofolio/scripts/cryptofolio.mjs setup \
 显示我的资产
 ```
 
+---
+
 ## 网页端使用
 
-配置云端后，可以在任意设备访问网页版：
+配置云端后，可以在任意设备（电脑、手机）访问：
 
 https://christinafanxy.github.io/CryptoFolio-Skill/
 
-1. 打开网页
-2. 点击右上角「☁️ 云端同步」按钮
-3. 填入相同的 Worker URL 和 Token
-4. 数据自动同步
+首次使用需要配置云端同步（右上角 ☁️ 按钮），之后数据自动同步。
 
 ## 使用示例
 
