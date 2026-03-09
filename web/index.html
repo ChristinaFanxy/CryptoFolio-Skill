@@ -835,18 +835,10 @@ let tradeTab = 'SPOT'; // 'SPOT' | 'PERP'
 let tradeFilter = {asset:'',accountId:''};
 
 function renderTrades(){
-  // 清空旧数据提示（方案B）
-  if(state.trades.length > 0 && !state.trades[0].tradeType){
-    return `<div class="section-hdr"><span class="section-title">交易记录</span></div>
-      <div style="padding:40px;text-align:center">
-        <div style="font-size:15px;color:var(--txt);margin-bottom:12px">⚠️ 数据结构已升级</div>
-        <div style="font-size:13px;color:var(--mid);margin-bottom:20px;line-height:1.8">
-          新版本支持 Spot 现货交易对 + Perp 合约，旧交易记录不兼容。<br/>
-          点击下方按钮清空旧数据，开始使用新系统。
-        </div>
-        <button class="btn" onclick="clearOldTrades()">清空旧数据并开始</button>
-      </div>`;
-  }
+  // 自动升级旧数据：给没有 tradeType 的交易添加默认值 SPOT
+  state.trades.forEach(t => {
+    if (!t.tradeType) t.tradeType = 'SPOT';
+  });
 
   // 计算 PNL 统计
   const spotTrades = state.trades.filter(t=>t.tradeType==='SPOT');
