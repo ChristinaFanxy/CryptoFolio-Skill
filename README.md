@@ -136,6 +136,10 @@ node ~/.openclaw/workspace/skills/cryptofolio/scripts/cryptofolio.mjs cloud-stat
 ```
 
 ### 第四步：开始使用
+在终端运行
+```bash
+openclaw gateway restart
+```
 
 在 OpenClaw 中直接对话：
 
