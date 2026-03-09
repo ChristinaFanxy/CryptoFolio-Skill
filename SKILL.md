@@ -98,16 +98,11 @@ node {baseDir}/scripts/cryptofolio.mjs export --format xlsx --output ~/cryptofol
 ```
 
 ### 打开可视化界面
-当用户想要查看可视化界面或图表时：
-1. 先启动本地服务器（在后台运行）：
+当用户想要查看可视化界面或图表时，执行以下命令启动服务器并打开浏览器：
 ```bash
-node {baseDir}/scripts/serve.mjs &
+node {baseDir}/scripts/serve.mjs & sleep 1 && open http://localhost:3456
 ```
-2. 然后用浏览器打开页面：
-```bash
-open http://localhost:3456
-```
-重要：必须通过 http://localhost:3456 访问，不能直接打开 HTML 文件，否则数据无法加载。
+注意：数据必须通过 http://localhost:3456 访问，不能直接打开本地 HTML 文件。
 
 ## 解析用户输入
 
