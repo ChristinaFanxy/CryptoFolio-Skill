@@ -97,6 +97,13 @@ node {baseDir}/scripts/cryptofolio.mjs export --format csv --output ~/cryptofoli
 node {baseDir}/scripts/cryptofolio.mjs export --format xlsx --output ~/cryptofolio-report.xlsx
 ```
 
+### 打开可视化界面
+当用户想要查看可视化界面或图表时，启动本地服务器：
+```bash
+node {baseDir}/scripts/serve.mjs
+```
+然后告诉用户在浏览器打开 http://localhost:3456
+
 ## 解析用户输入
 
 当用户用自然语言描述交易或持仓时，你需要：
