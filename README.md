@@ -22,7 +22,37 @@ git clone https://github.com/ChristinaFanxy/CryptoFolio-Skill.git ~/.openclaw/wo
 
 ## 数据存储
 
-数据保存在本地 `~/.openclaw/data/cryptofolio.json`，完全离线，无需云端服务。
+数据默认保存在本地 `~/.openclaw/data/cryptofolio.json`。
+
+支持云端同步，配置后可在多设备（电脑、手机）间共享数据。
+
+## 云端同步（可选）
+
+### 1. 部署 Cloudflare Worker
+
+1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)
+2. 进入 Workers & Pages → Create Worker
+3. 复制 `cloudflare-worker/worker.js` 的内容
+4. 修改 `TOKEN` 为你的密码
+5. 创建 KV 命名空间，绑定为 `KV`
+6. 部署 Worker
+
+### 2. 配置 CLI
+
+```bash
+# 方式一：环境变量
+export CRYPTOFOLIO_API_URL="https://your-worker.workers.dev"
+export CRYPTOFOLIO_TOKEN="your-secret-token"
+
+# 方式二：配置命令
+node ~/.openclaw/workspace/skills/cryptofolio/scripts/cryptofolio.mjs setup \
+  --url "https://your-worker.workers.dev" \
+  --token "your-secret-token"
+```
+
+### 3. 网页端配置
+
+访问 https://christinafanxy.github.io/CryptoFolio-Skill/ ，点击右上角「☁️ 云端同步」按钮，填入相同的 URL 和 Token。
 
 ## 使用示例
 
@@ -56,7 +86,10 @@ AI: 资产报告已导出到 ~/cryptofolio-report.csv
 
 ## 可视化界面
 
-说 "打开可视化界面" 后，在浏览器访问 http://localhost:3456 即可看到完整的图形化资产管理界面。
+两种访问方式：
+
+1. **本地模式**：说 "打开可视化界面"，访问 http://localhost:3456
+2. **云端模式**：直接访问 https://christinafanxy.github.io/CryptoFolio-Skill/ （需先配置云端同步）
 
 ## 默认账户
 

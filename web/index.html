@@ -344,6 +344,9 @@ textarea{resize:none;font-family:var(--sans);font-size:14px;line-height:1.6}
     <button id="refresh-btn" class="btn ghost ai-btn" onclick="refreshPrices()" style="font-size:12px;padding:8px 14px">
       <span id="refresh-icon">🔄</span><span id="refresh-label">刷新价格</span>
     </button>
+    <button id="cf-btn" class="btn ghost ai-btn" onclick="openCFModal()" style="font-size:12px;padding:8px 14px" title="云端同步设置">
+      <span id="cf-icon">☁️</span><span id="cf-lbl">云端同步</span>
+    </button>
     <button id="apikey-btn" class="btn ghost ai-btn" onclick="openApiKeyModal()" style="font-size:12px;padding:8px 14px" title="设置 Claude API Key">
       <span id="apikey-icon">🔑</span><span id="apikey-label">API Key</span>
     </button>
@@ -372,9 +375,58 @@ textarea{resize:none;font-family:var(--sans);font-size:14px;line-height:1.6}
 // ═══════════════════════════════════════════════════════
 const STORE = 'cryptofolio_v1';
 const API_URL = 'http://localhost:3456';
+const CF_CONFIG_KEY = 'cryptofolio_cf';
 
 let state = null;
 let _syncTimer = null;
+
+// ═══════════════════════════════════════════════════════
+// CLOUDFLARE 云端同步
+// ═══════════════════════════════════════════════════════
+function getCFConfig(){
+  try{ return JSON.parse(localStorage.getItem(CF_CONFIG_KEY)||'{}'); }catch(e){ return {}; }
+}
+function setCFConfig(cfg){ localStorage.setItem(CF_CONFIG_KEY, JSON.stringify(cfg)); }
+function hasCF(){ const c=getCFConfig(); return !!(c.apiUrl && c.token); }
+
+// 从云端加载数据
+async function syncFromCloud(){
+  const cfg = getCFConfig();
+  if(!cfg.apiUrl || !cfg.token) return false;
+  try{
+    const res = await fetch(`${cfg.apiUrl}/api/data`, {
+      headers: { 'Authorization': `Bearer ${cfg.token}` }
+    });
+    if(res.ok){
+      const d = await res.json();
+      if(d.ok && d.data){
+        state = d.data;
+        // 同时保存到本地 localStorage 作为备份
+        localStorage.setItem(STORE, JSON.stringify(state));
+        render();
+        return true;
+      }
+    }
+  }catch(e){ console.warn('云端同步失败:', e); }
+  return false;
+}
+
+// 推送数据到云端
+async function pushToCloud(){
+  const cfg = getCFConfig();
+  if(!cfg.apiUrl || !cfg.token) return false;
+  try{
+    const res = await fetch(`${cfg.apiUrl}/api/data`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${cfg.token}`
+      },
+      body: JSON.stringify(state)
+    });
+    return res.ok;
+  }catch(e){ console.warn('云端推送失败:', e); return false; }
+}
 
 // 从本地 API 加载数据
 async function loadFromAPI(){
@@ -405,6 +457,12 @@ async function saveToAPI(){
       body: JSON.stringify(state)
     });
   }catch(e){ console.error('保存失败:', e); }
+  // 同时保存到云端（如果已配置）
+  if(hasCF()){
+    pushToCloud();
+  }
+  // 同时保存到 localStorage 作为备份
+  localStorage.setItem(STORE, JSON.stringify(state));
 }
 
 // 保存：防抖 500ms
@@ -1756,7 +1814,7 @@ function saveFin(id){
 }
 
 // ═══════════════════════════════════════════════════════
-// 结束理财记录
+// ��束理财记录
 // ═══════════════════════════════════════════════════════
 function endFin(id){
   const f = state.finance.find(x=>x.id===id);
@@ -1764,7 +1822,8 @@ function endFin(id){
   const cat = getFinCategory(f);
 
   if(cat==='COIN_STAKE'){
-    const income = parseFloat(f.income)||0;
+    // 使用实时计算的累计收益
+    const income = calcCurrentIncome(f);
     showModal(`
       <div class="modal-hdr">
         <span class="modal-title">结束 · 币本位理财</span>
@@ -1778,7 +1837,7 @@ function endFin(id){
       </div>
       <div class="field">
         <label>最终收益数量（${esc(f.asset)}）</label>
-        <input id="end-income" type="number" value="${income}" placeholder="0.000000"/>
+        <input id="end-income" type="number" value="${income.toFixed(6)}" placeholder="0.000000"/>
       </div>
       <div style="font-size:11px;color:var(--dim);margin-bottom:14px;line-height:1.8">
         确认后将自动：<br/>
@@ -1848,7 +1907,8 @@ function endFin(id){
     `);
 
   } else {
-    const income = parseFloat(f.income)||0;
+    // 使用实时计算的累计收益
+    const income = calcCurrentIncome(f);
     showModal(`
       <div class="modal-hdr">
         <span class="modal-title">结束 · U本位理财</span>
@@ -1862,7 +1922,7 @@ function endFin(id){
       </div>
       <div class="field">
         <label>最终收益 USD</label>
-        <input id="end-income" type="number" value="${income}" placeholder="0.00"/>
+        <input id="end-income" type="number" value="${income.toFixed(2)}" placeholder="0.00"/>
       </div>
       <div style="font-size:11px;color:var(--dim);margin-bottom:14px;line-height:1.8">
         确认后将自动：<br/>
@@ -3599,9 +3659,33 @@ function showToast(msg){
 // INIT
 // ═══════════════════════════════════════════════════════
 (async function init(){
+  // 优先从云端加载（如果已配置）
+  if(hasCF()){
+    const ok = await syncFromCloud();
+    if(ok){
+      updateApiKeyBtn();
+      updateCFBtn();
+      runDailyAccrual();
+      return;
+    }
+  }
+  // 其次尝试本地 API（localhost:3456）
   state = await loadFromAPI();
+  // 如果本地 API 也没数据，尝试从 localStorage 恢复
+  if(!state.positions?.length && !state.trades?.length){
+    try{
+      const cached = localStorage.getItem(STORE);
+      if(cached){
+        const parsed = JSON.parse(cached);
+        if(parsed.positions?.length || parsed.trades?.length){
+          state = parsed;
+        }
+      }
+    }catch(e){}
+  }
   render();
   updateApiKeyBtn();
+  updateCFBtn();
   runDailyAccrual();
 })();
 </script>

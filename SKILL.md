@@ -22,7 +22,31 @@ user-invocable: true
 
 ## 数据存储
 
-数据保存在本地文件 `~/.openclaw/data/cryptofolio.json`，无需任何配置。
+数据默认保存在本地文件 `~/.openclaw/data/cryptofolio.json`。
+
+支持云端同步（Cloudflare Workers），配置后可在多设备间同步数据。
+
+## 云端同步设置
+
+当用户想要设置云端同步时，执行：
+```bash
+node {baseDir}/scripts/cryptofolio.mjs setup
+```
+
+配置云端参数：
+```bash
+node {baseDir}/scripts/cryptofolio.mjs setup --url "https://your-worker.workers.dev" --token "your-secret-token"
+```
+
+查看云端状态：
+```bash
+node {baseDir}/scripts/cryptofolio.mjs cloud-status
+```
+
+断开云端连接：
+```bash
+node {baseDir}/scripts/cryptofolio.mjs cloud-disconnect
+```
 
 ## 使用示例
 
