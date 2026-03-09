@@ -14,7 +14,8 @@
 ## 安装
 
 ```bash
-git clone https://github.com/ChristinaFanxy/CryptoFolio-Skill.git ~/.openclaw/extensions/cryptofolio
+mkdir -p ~/.openclaw/workspace/skills
+git clone https://github.com/ChristinaFanxy/CryptoFolio-Skill.git ~/.openclaw/workspace/skills/cryptofolio
 ```
 
 安装后重启 OpenClaw 即可使用，无需任何配置。
