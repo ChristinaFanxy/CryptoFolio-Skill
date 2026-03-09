@@ -240,19 +240,42 @@ function addPosition(opts) {
   if (!acc) {
     error(`找不到账户: ${opts.account}。可用账户: ${state.accounts.map(a => a.name).join(', ')}`);
   }
-  const newPosition = {
-    id: uid(),
-    accountId: acc.id,
-    asset: opts.asset.toUpperCase(),
-    amount: parseFloat(opts.amount),
-    avgCost: opts.avgCost ? parseFloat(opts.avgCost) : 0,
-    currentPrice: opts.currentPrice ? parseFloat(opts.currentPrice) : 0,
-    currentValue: opts.currentValue ? parseFloat(opts.currentValue) : null,
-    note: opts.note || '',
-  };
-  state.positions.push(newPosition);
-  saveData(state);
-  success(`已添加持仓: ${acc.name} ${newPosition.amount} ${newPosition.asset}`);
+
+  const asset = opts.asset.toUpperCase();
+  const amount = parseFloat(opts.amount);
+  const avgCost = opts.avgCost ? parseFloat(opts.avgCost) : 0;
+  const currentPrice = opts.currentPrice ? parseFloat(opts.currentPrice) : 0;
+
+  // 查找是否已有相同账户+资产的持仓
+  const existing = state.positions.find(p => p.accountId === acc.id && p.asset === asset);
+
+  if (existing) {
+    // 合并持仓：计算新的加权平均成本
+    const oldTotal = existing.amount * existing.avgCost;
+    const newTotal = amount * avgCost;
+    const totalAmount = existing.amount + amount;
+    existing.amount = totalAmount;
+    existing.avgCost = totalAmount > 0 ? (oldTotal + newTotal) / totalAmount : 0;
+    if (currentPrice > 0) existing.currentPrice = currentPrice;
+    if (opts.note) existing.note = opts.note;
+    saveData(state);
+    success(`已更新持仓: ${acc.name} ${existing.amount} ${asset} (均价 ${formatUSD(existing.avgCost)})`);
+  } else {
+    // 新建持仓
+    const newPosition = {
+      id: uid(),
+      accountId: acc.id,
+      asset,
+      amount,
+      avgCost,
+      currentPrice,
+      currentValue: opts.currentValue ? parseFloat(opts.currentValue) : null,
+      note: opts.note || '',
+    };
+    state.positions.push(newPosition);
+    saveData(state);
+    success(`已添加持仓: ${acc.name} ${amount} ${asset}`);
+  }
 }
 
 function addFinance(opts) {
