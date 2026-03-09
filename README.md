@@ -12,7 +12,63 @@
 - ☁️ **云端同步** - 多设备共享数据
 - 📊 **导出报告** - 一键导出 CSV/Excel
 
-## 快速开始
+---
+
+## 纯网页用户（不用 OpenClaw）
+
+如果你只想用网页版管理资产，不需要安装任何东西：
+
+### 1. 部署云端存储
+
+1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)
+2. **Workers & Pages** → **Create** → **Create Worker**
+3. 起个名字，点 **Deploy**
+4. 点 **Edit code**，粘贴以下代码：
+
+```js
+const TOKEN = 'your-secret-token'; // 改成你的密码
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const auth = request.headers.get('Authorization');
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
+    if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+    if (url.pathname === '/api/health') return Response.json({ ok: true }, { headers: corsHeaders });
+    if (auth !== `Bearer ${TOKEN}`) return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
+    if (url.pathname === '/api/data' && request.method === 'GET') {
+      const data = await env.KV.get('cryptofolio_data', 'json');
+      return Response.json({ ok: true, data: data || { accounts: [], positions: [], trades: [], finance: [], transfers: [] } }, { headers: corsHeaders });
+    }
+    if (url.pathname === '/api/data' && request.method === 'POST') {
+      await env.KV.put('cryptofolio_data', JSON.stringify(await request.json()));
+      return Response.json({ ok: true }, { headers: corsHeaders });
+    }
+    return Response.json({ ok: false, error: 'Not found' }, { status: 404, headers: corsHeaders });
+  },
+};
+```
+
+5. 点 **Deploy**
+6. **Settings** → **Variables and Secrets** → **KV Namespace Bindings** → **Add binding**
+   - Variable name: `KV`
+   - 创建新的 namespace，命名为 `cryptofolio-data`
+7. 记下你的 Worker URL
+
+### 2. 打开网页使用
+
+1. 访问 https://christinafanxy.github.io/CryptoFolio-Skill/
+2. 点击右上角「☁️ 云端同步」
+3. 填入 Worker URL 和 Token
+4. 开始使用，数据保存在你自己的云端
+
+---
+
+## OpenClaw 用户
 
 ### 第一步：安装 Skill
 
