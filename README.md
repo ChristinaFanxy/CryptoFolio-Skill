@@ -13,129 +13,15 @@
 
 ## 安装
 
-### 方式一：通过 ClawHub 安装
-
 ```bash
-clawhub install cryptofolio
+git clone https://github.com/ChristinaFanxy/CryptoFolio-Skill.git ~/.openclaw/extensions/cryptofolio
 ```
 
-### 方式二：手动安装
+安装后重启 OpenClaw 即可使用，无需任何配置。
 
-```bash
-git clone https://github.com/christinaxu/cryptofolio-skill.git ~/.openclaw/skills/cryptofolio
-```
+## 数据存储
 
-## 配置
-
-在 `~/.openclaw/openclaw.json` 中添加：
-
-```json
-{
-  "skills": {
-    "entries": {
-      "cryptofolio": {
-        "enabled": true,
-        "env": {
-          "CRYPTOFOLIO_API_URL": "https://your-worker.workers.dev",
-          "CRYPTOFOLIO_TOKEN": "your-secret-token"
-        }
-      }
-    }
-  }
-}
-```
-
-## 后端部署
-
-你需要部署一个 Cloudflare Worker 作为数据存储后端。
-
-### 1. 创建 Worker
-
-在 Cloudflare Dashboard 创建一个新的 Worker，代码如下：
-
-```javascript
-// worker.js
-const TOKEN = 'your-secret-token'; // 修改为你的密码
-
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
-    const auth = request.headers.get('Authorization');
-
-    // CORS headers
-    const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    };
-
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: corsHeaders });
-    }
-
-    // Health check
-    if (url.pathname === '/api/health') {
-      return Response.json({ ok: true }, { headers: corsHeaders });
-    }
-
-    // Auth check
-    if (auth !== `Bearer ${TOKEN}`) {
-      return Response.json({ ok: false, error: 'Unauthorized' }, {
-        status: 401,
-        headers: corsHeaders
-      });
-    }
-
-    // GET data
-    if (url.pathname === '/api/data' && request.method === 'GET') {
-      const data = await env.KV.get('cryptofolio_data', 'json') || {
-        accounts: [],
-        positions: [],
-        trades: [],
-        finance: [],
-        transfers: []
-      };
-      return Response.json({ ok: true, data }, { headers: corsHeaders });
-    }
-
-    // POST data
-    if (url.pathname === '/api/data' && request.method === 'POST') {
-      const data = await request.json();
-      await env.KV.put('cryptofolio_data', JSON.stringify(data));
-      return Response.json({ ok: true }, { headers: corsHeaders });
-    }
-
-    return Response.json({ ok: false, error: 'Not found' }, {
-      status: 404,
-      headers: corsHeaders
-    });
-  }
-};
-```
-
-### 2. 创建 KV 命名空间
-
-```bash
-wrangler kv:namespace create "KV"
-```
-
-### 3. 配置 wrangler.toml
-
-```toml
-name = "cryptofolio-api"
-main = "worker.js"
-compatibility_date = "2024-01-01"
-
-[[kv_namespaces]]
-binding = "KV"
-id = "your-kv-namespace-id"
-```
-
-### 4. 部署
-
-```bash
-wrangler deploy
-```
+数据保存在本地 `~/.openclaw/data/cryptofolio.json`，完全离线，无需云端服务。
 
 ## 使用示例
 
@@ -165,6 +51,15 @@ AI: 资产报告已导出到 ~/cryptofolio-report.csv
 | "充值 X USDT" | 添加流水 |
 | "显示资产" | 查看概览 |
 | "导出报告" | 导出 CSV |
+
+## 默认账户
+
+预设了三个常用账户：
+- Binance (CEX)
+- OKX (CEX)
+- MetaMask (钱包)
+
+可以通过对话添加更多账户。
 
 ## License
 
